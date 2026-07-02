@@ -738,7 +738,7 @@ body {
 
 button {
   border: 0;
-  background: #fbfbfa;
+  background: #fafaf9;
   border-radius: 12px;
   width: 42px;
   height: 34px;
@@ -746,10 +746,10 @@ button {
 }
 
 button:hover {
-  background: #f5f5f4;
+  background: #f4f4f3;
 }
 
 .active {
-  background: #f0f0ef;
+  background: #efefee;
 }
 </style>
