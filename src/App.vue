@@ -392,6 +392,7 @@ public sealed class ExpenseServiceTests
     code: String.raw`using ExpenseExam.Core.FileStorage;
 using ExpenseExam.Core.Models;
 using ExpenseExam.Core.Services;
+
 var expenses = new List<Expense>
 {
     new Expense { Date = new DateTime(2026, 7, 1), Category = "Еда", Amount = 450, Comment = "Обед" },
@@ -401,19 +402,32 @@ var expenses = new List<Expense>
 var service = new ExpenseService();
 var csvStorage = new CsvStorage();
 var excelStorage = new ExcelStorage();
+var jsonStorage = new JsonStorage();
+
 var dataFolder = Path.Combine(AppContext.BaseDirectory, "data");
 Directory.CreateDirectory(dataFolder);
+
 var csvPath = Path.Combine(dataFolder, "expenses.csv");
 var xlsxPath = Path.Combine(dataFolder, "expenses.xlsx");
+var jsonPath = Path.Combine(dataFolder, "expenses.json");
+
+
 Console.WriteLine($"Общая сумма: {service.GetTotal(expenses):F2}");
 Console.WriteLine($"Средний расход: {service.GetAverage(expenses):F2}");
 Console.WriteLine($"Самый большой расход: {service.GetMaxExpense(expenses)?.Amount:F2}");
+
 csvStorage.Save(csvPath, expenses);
 var expensesFromCsv = csvStorage.Load(csvPath);
 Console.WriteLine($"CSV загружено записей: {expensesFromCsv.Count}");
+
 excelStorage.Save(xlsxPath, expenses);
 var expensesFromXlsx = excelStorage.Load(xlsxPath);
 Console.WriteLine($"XLSX загружено записей: {expensesFromXlsx.Count}");
+
+jsonStorage.Save(jsonPath, expenses);
+var expensesFromJson = jsonStorage.Load(jsonPath);
+Console.WriteLine($"JSON загружено записей: {expensesFromJson.Count}");
+
 Console.WriteLine($"Файлы созданы в папке: {dataFolder}");`
   },
   {
@@ -478,22 +492,32 @@ public class Expense
     code: String.raw`using ClosedXML.Excel;
 using ExpenseExam.Core.Diagnostics;
 using ExpenseExam.Core.Models;
+
 namespace ExpenseExam.Core.FileStorage;
+
+/// <summary>
 /// Сохраняет и загружает расходы в XLSX-файл.
+/// </summary>
 public class ExcelStorage
 {
     private const string SheetName = "Expenses";
+
+    /// <summary>
     /// Сохраняет список расходов в Excel-файл.
+    /// </summary>
     public void Save(string path, List<Expense> expenses)
     {
         DebugHelper.WriteDebug($"Сохранение XLSX: {path}");
+
         using var workbook = new XLWorkbook();
         var sheet = workbook.Worksheets.Add(SheetName);
+
         sheet.Cell(1, 1).Value = "Date";
         sheet.Cell(1, 2).Value = "Category";
         sheet.Cell(1, 3).Value = "Amount";
         sheet.Cell(1, 4).Value = "Comment";
         sheet.Range("A1:D1").Style.Font.Bold = true;
+
         for (var i = 0; i < expenses.Count; i++)
         {
             var row = i + 2;
@@ -503,16 +527,22 @@ public class ExcelStorage
             sheet.Cell(row, 3).Value = expenses[i].Amount;
             sheet.Cell(row, 4).Value = expenses[i].Comment;
         }
+
         sheet.Columns().AdjustToContents();
         workbook.SaveAs(path);
     }
+
+    /// <summary>
     /// Загружает список расходов из Excel-файла.
+    /// </summary>
     public List<Expense> Load(string path)
     {
         DebugHelper.WriteTrace($"Загрузка XLSX: {path}");
+
         using var workbook = new XLWorkbook(path);
         var sheet = workbook.Worksheet(SheetName);
         var expenses = new List<Expense>();
+
         for (var row = 2; !sheet.Cell(row, 1).IsEmpty(); row++)
         {
             expenses.Add(new Expense
@@ -523,7 +553,55 @@ public class ExcelStorage
                 Comment = sheet.Cell(row, 4).GetString()
             });
         }
+
         return expenses;
+    }
+}`
+  },
+  {
+    id: 'json',
+    title: 'json.txt',
+    code: String.raw`using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using ExpenseExam.Core.Diagnostics;
+using ExpenseExam.Core.Models;
+
+namespace ExpenseExam.Core.FileStorage;
+
+/// <summary>
+/// Сохраняет и загружает расходы в JSON-файл.
+/// </summary>
+public class JsonStorage
+{
+    private static readonly UTF8Encoding FileEncoding = new(encoderShouldEmitUTF8Identifier: true);
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        WriteIndented = true
+    };
+
+    /// <summary>
+    /// Сохраняет список расходов в JSON-файл.
+    /// </summary>
+    public void Save(string path, List<Expense> expenses)
+    {
+        DebugHelper.WriteDebug($"Сохранение JSON: {path}");
+
+        var json = JsonSerializer.Serialize(expenses, JsonOptions);
+        File.WriteAllText(path, json, FileEncoding);
+    }
+
+    /// <summary>
+    /// Загружает список расходов из JSON-файла.
+    /// </summary>
+    public List<Expense> Load(string path)
+    {
+        DebugHelper.WriteTrace($"Загрузка JSON: {path}");
+
+        var json = File.ReadAllText(path, FileEncoding);
+        return JsonSerializer.Deserialize<List<Expense>>(json, JsonOptions) ?? [];
     }
 }`
   },
@@ -534,12 +612,19 @@ public class ExcelStorage
 using System.Text;
 using ExpenseExam.Core.Diagnostics;
 using ExpenseExam.Core.Models;
+
 namespace ExpenseExam.Core.FileStorage;
+
+/// <summary>
 /// Сохраняет и загружает расходы в CSV-файл.
+/// </summary>
 public class CsvStorage
 {
     private static readonly UTF8Encoding FileEncoding = new(encoderShouldEmitUTF8Identifier: true);
+
+    /// <summary>
     /// Сохраняет список расходов в CSV-файл с разделителем ";".
+    /// </summary>
     public void Save(string path, List<Expense> expenses)
     {
         DebugHelper.WriteDebug($"Сохранение CSV: {path}");
@@ -553,18 +638,24 @@ public class CsvStorage
                 $"{expense.Date:yyyy-MM-dd};{expense.Category};{expense.Amount.ToString(CultureInfo.InvariantCulture)};{expense.Comment}");
         }
     }
+
+    /// <summary>
     /// Загружает список расходов из CSV-файла.
+    /// </summary>
     public List<Expense> Load(string path)
     {
         DebugHelper.WriteTrace($"Загрузка CSV: {path}");
+
         var expenses = new List<Expense>();
         var lines = File.ReadAllLines(path, FileEncoding).Skip(1);
+
         foreach (var line in lines)
         {
             if (string.IsNullOrWhiteSpace(line))
             {
                 continue;
             }
+
             var parts = line.Split(';');
 
             expenses.Add(new Expense
