@@ -8,7 +8,7 @@
         :aria-label="item.title"
         :class="{ active: copied === item.id }"
         @click="copyText(item)"
-      ></button>
+      >.</button>
     </div>
 
     <div class="row">
@@ -19,7 +19,7 @@
         :aria-label="item.title"
         :class="{ active: copied === item.id }"
         @click="copyText(item)"
-      ></button>
+      >.</button>
     </div>
   </main>
 </template>
@@ -739,10 +739,13 @@ body {
 button {
   border: 0;
   background: #e0e0e0;
+  color: #777;
   border-radius: 12px;
   width: 42px;
   height: 34px;
   cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
 }
 
 button:hover {
