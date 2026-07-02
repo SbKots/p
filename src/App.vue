@@ -737,8 +737,9 @@ body {
 }
 
 button {
+  appearance: none;
   border: 0;
-  background: #e0e0e0;
+  background: transparent;
   color: #777;
   border-radius: 12px;
   width: 42px;
@@ -749,10 +750,10 @@ button {
 }
 
 button:hover {
-  background: #dcdcdc;
+  background: transparent;
 }
 
 .active {
-  background: #d6d6d6;
+  background: transparent;
 }
 </style>
