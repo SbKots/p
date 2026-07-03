@@ -38,6 +38,7 @@ using System.IO;
 
 class Program
 {
+    // Переводим строку из файла в массив чисел
     static int[] Nums(string s)
     {
         string[] parts = s.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
@@ -51,14 +52,23 @@ class Program
     }
     static void Main()
     {
+        // Считываем все строки из файла
         string[] lines = File.ReadAllLines("input1.txt");
+
+        // Первая строка - размер таблицы
         int[] size = Nums(lines[0]);
         int m = size[0];
         int n = size[1];
+
+        // Запасы поставщиков и потребности покупателей
         int[] a = Nums(lines[1]);
         int[] b = Nums(lines[2]);
+
+        // c - стоимости, x - будущий план
         int[,] c = new int[m, n];
         int[,] x = new int[m, n];
+
+        // Заполняем таблицу стоимостей
         for (int i = 0; i < m; i++)
         {
             int[] row = Nums(lines[i + 3]);
@@ -70,26 +80,35 @@ class Program
         }
         int r = 0;
         int col = 0;
+
+        // Идем с левого верхнего угла
         while (r < m && col < n)
         {
             int v;
 
+            // Берем минимальное из запаса и потребности
             if (a[r] < b[col])
                 v = a[r];
             else
                 v = b[col];
 
+            // Записываем перевозку в план
             x[r, col] = v;
             a[r] -= v;
             b[col] -= v;
 
+            // Если строка или столбец закончились - идем дальше
             if (a[r] == 0) r++;
             if (col < n && b[col] == 0) col++;
         }
+
+        // Считаем итоговую стоимость
         int sum = 0;
         for (int i = 0; i < m; i++)
             for (int j = 0; j < n; j++)
                 sum += x[i, j] * c[i, j];
+
+        // Записываем ответ в файл
         StreamWriter f = new StreamWriter("output1.txt");
         f.WriteLine("Метод северо-западного угла");
         f.WriteLine("План:");
@@ -113,6 +132,7 @@ class Program
 using System.IO;
 class Program
 {
+    // Переводим строку из файла в числа
     static int[] Nums(string s)
     {
         string[] parts = s.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
@@ -125,14 +145,23 @@ class Program
     }
     static void Main()
     {
+        // Читаем данные из файла
         string[] lines = File.ReadAllLines("input2.txt");
+
+        // Размер таблицы
         int[] size = Nums(lines[0]);
         int m = size[0];
         int n = size[1];
+
+        // Запасы и потребности
         int[] a = Nums(lines[1]);
         int[] b = Nums(lines[2]);
+
+        // c - стоимости, x - план
         int[,] c = new int[m, n];
         int[,] x = new int[m, n];
+
+        // Заполняем стоимости
         for (int i = 0; i < m; i++)
         {
             int[] row = Nums(lines[i + 3]);
@@ -142,12 +171,15 @@ class Program
                 c[i, j] = row[j];
             }
         }
+
+        // Повторяем, пока можно что-то распределять
         while (true)
         {
             int min = 1000000;
             int r = -1;
             int col = -1;
 
+            // Ищем самую дешевую свободную клетку
             for (int i = 0; i < m; i++)
             {
                 for (int j = 0; j < n; j++)
@@ -160,21 +192,30 @@ class Program
                     }
                 }
             }
+
+            // Если клеток больше нет - выходим
             if (r == -1) break;
+
+            // Берем минимальное из запаса и потребности
             int v;
             if (a[r] < b[col])
                 v = a[r];
             else
                 v = b[col];
 
+            // Записываем перевозку
             x[r, col] = v;
             a[r] -= v;
             b[col] -= v;
         }
+
+        // Считаем стоимость плана
         int sum = 0;
         for (int i = 0; i < m; i++)
             for (int j = 0; j < n; j++)
                 sum += x[i, j] * c[i, j];
+
+        // Записываем результат в файл
         StreamWriter f = new StreamWriter("output2.txt");
         f.WriteLine("Метод минимального элемента");
         f.WriteLine("План:");
@@ -200,6 +241,7 @@ using System.IO;
 
 class Program
 {
+    // Переводим строку из файла в массив чисел
     static int[] Nums(string s)
     {
         string[] parts = s.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
@@ -213,10 +255,15 @@ class Program
     }
     static void Main()
     {
+        // Читаем весь файл
         string[] lines = File.ReadAllLines("input3.txt");
+
+        // Количество вершин и стартовая вершина
         int[] first = Nums(lines[0]);
         int n = first[0];
         int start = first[1] - 1;
+
+        // Матрица графа
         int[,] g = new int[n, n];
         for (int i = 0; i < n; i++)
         {
@@ -227,19 +274,27 @@ class Program
                 g[i, j] = row[j];
             }
         }
+
+        // Большое число вместо бесконечности
         int inf = 1000000000;
         int[] d = new int[n];
         bool[] used = new bool[n];
 
+        // Сначала все расстояния неизвестны
         for (int i = 0; i < n; i++)
         {
             d[i] = inf;
         }
+
+        // До стартовой вершины расстояние 0
         d[start] = 0;
+
+        // Основной цикл Дейкстры
         for (int step = 0; step < n; step++)
         {
             int v = -1;
 
+            // Ищем непосещенную вершину с минимальным расстоянием
             for (int i = 0; i < n; i++)
             {
                 if (!used[i] && (v == -1 || d[i] < d[v]))
@@ -248,10 +303,12 @@ class Program
                 }
             }
 
+            // Если подходящей вершины нет - заканчиваем
             if (v == -1 || d[v] == inf) break;
 
             used[v] = true;
 
+            // Пробуем улучшить расстояния до соседей
             for (int to = 0; to < n; to++)
             {
                 if (g[v, to] > 0 && d[v] + g[v, to] < d[to])
@@ -260,6 +317,8 @@ class Program
                 }
             }
         }
+
+        // Записываем ответ в файл
         StreamWriter f = new StreamWriter("output3.txt");
         f.WriteLine("Алгоритм Дейкстры");
         for (int i = 0; i < n; i++)
@@ -283,8 +342,11 @@ class Program
 {
     static void Main()
     {
+        // Читаем ребра дерева из файла
         string[] lines = File.ReadAllLines("input4.txt");
         int n = 0;
+
+        // Ищем самый большой номер вершины
         for (int i = 0; i < lines.Length; i++)
         {
             if (lines[i].Trim() == "") continue;
@@ -294,8 +356,12 @@ class Program
             if (a > n) n = a;
             if (b > n) n = b;
         }
+
+        // g - матрица смежности, deg - степени вершин
         int[,] g = new int[n + 1, n + 1];
         int[] deg = new int[n + 1];
+
+        // Заполняем дерево
         for (int i = 0; i < lines.Length; i++)
         {
             if (lines[i].Trim() == "") continue;
@@ -307,26 +373,40 @@ class Program
             deg[a]++;
             deg[b]++;
         }
+
+        // Тут будет код Прюфера
         string code = "";
+
+        // В коде Прюфера будет n - 2 числа
         for (int step = 0; step < n - 2; step++)
         {
             int leaf = 1;
+
+            // Ищем самый маленький лист
             while (deg[leaf] != 1)
             {
                 leaf++;
             }
             int next = 1;
+
+            // Ищем соседа этого листа
             while (g[leaf, next] == 0)
             {
                 next++;
             }
+
+            // Добавляем соседа в код
             if (code != "") code += " ";
             code += next;
+
+            // Удаляем лист из дерева
             g[leaf, next] = 0;
             g[next, leaf] = 0;
             deg[leaf]--;
             deg[next]--;
         }
+
+        // Записываем готовый код в файл
         File.WriteAllText("output4.txt", "Код Прюфера: " + code);
     }
 }`
