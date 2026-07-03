@@ -43,6 +43,17 @@
         @click="copyText(item)"
       >.</button>
     </div>
+
+    <div class="row">
+      <button
+        v-for="item in moduleTests"
+        :key="item.id"
+        :title="item.title"
+        :aria-label="item.title"
+        :class="{ active: copied === item.id }"
+        @click="copyText(item)"
+      >.</button>
+    </div>
   </main>
 </template>
 
@@ -1622,6 +1633,292 @@ List<Expense> fromXlsx = xlsx.Load(xlsxPath);
 Console.WriteLine("Из XLSX прочитано: " + fromXlsx.Count);
 
 Console.WriteLine("Файлы лежат тут: " + folder);`
+  }
+]
+
+const moduleTests = [
+  {
+    id: 'module-tests',
+    title: 'Тесты для модулей',
+    code: String.raw`// Это один общий текст с тестами.
+// Куски ниже надо разложить по файлам.
+// Есть тесты для 4 алгоритмов и для модулей расходов: модель, сервис, CSV, JSON, XLSX, Debug.
+
+// ==================================================
+// Файл: ModularMethods.Tests/ModularMethods.Tests.csproj
+// ==================================================
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ModularMethods\ModularMethods.csproj" />
+  </ItemGroup>
+</Project>
+
+
+// ==================================================
+// Файл: ModularMethods.Tests/AlgorithmModuleTests.cs
+// ==================================================
+using ModularMethods;
+
+namespace ModularMethods.Tests;
+
+[TestClass]
+public class AlgorithmModuleTests
+{
+    [TestMethod]
+    public void NumberReader_ReadsNumbers()
+    {
+        int[] nums = NumberReader.Nums("10 20 30");
+
+        Assert.AreEqual(3, nums.Length);
+        Assert.AreEqual(10, nums[0]);
+        Assert.AreEqual(20, nums[1]);
+        Assert.AreEqual(30, nums[2]);
+    }
+
+    [TestMethod]
+    public void NorthWestMethod_CreatesCorrectCost()
+    {
+        File.WriteAllText("input1.txt", TransportInput());
+
+        NorthWestMethod.Run();
+
+        string text = File.ReadAllText("output1.txt");
+        StringAssert.Contains(text, "Стоимость = 971");
+    }
+
+    [TestMethod]
+    public void MinElementMethod_CreatesCorrectCost()
+    {
+        File.WriteAllText("input2.txt", TransportInput());
+
+        MinElementMethod.Run();
+
+        string text = File.ReadAllText("output2.txt");
+        StringAssert.Contains(text, "Стоимость = 442");
+    }
+
+    [TestMethod]
+    public void DijkstraMethod_CreatesCorrectDistances()
+    {
+        File.WriteAllText("input3.txt", DijkstraInput());
+
+        DijkstraMethod.Run();
+
+        string text = File.ReadAllText("output3.txt");
+        StringAssert.Contains(text, "До вершины 1: 0");
+        StringAssert.Contains(text, "До вершины 4: 20");
+        StringAssert.Contains(text, "До вершины 6: 11");
+    }
+
+    [TestMethod]
+    public void PruferCodeMethod_CreatesCorrectCode()
+    {
+        File.WriteAllText("input4.txt", PruferInput());
+
+        PruferCodeMethod.Run();
+
+        string text = File.ReadAllText("output4.txt");
+        StringAssert.Contains(text, "Код Прюфера: 1 3 3 5");
+    }
+
+    private static string TransportInput()
+    {
+        return "4 5\n" +
+               "14 14 14 14\n" +
+               "13 5 13 12 13\n" +
+               "16 26 12 24 3\n" +
+               "5 2 19 27 2\n" +
+               "29 23 25 16 8\n" +
+               "2 25 14 15 21\n";
+    }
+
+    private static string DijkstraInput()
+    {
+        return "6 1\n" +
+               "0 7 9 0 0 14\n" +
+               "7 0 10 15 0 0\n" +
+               "9 10 0 11 0 2\n" +
+               "0 15 11 0 6 0\n" +
+               "0 0 0 6 0 9\n" +
+               "14 0 2 0 9 0\n";
+    }
+
+    private static string PruferInput()
+    {
+        return "1 2\n" +
+               "1 3\n" +
+               "3 4\n" +
+               "3 5\n" +
+               "5 6\n";
+    }
+}
+
+
+// ==================================================
+// Файл: ExpenseExam.Tests/ExpenseExam.Tests.csproj
+// ==================================================
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ExpenseExam\ExpenseExam.csproj" />
+  </ItemGroup>
+</Project>
+
+
+// ==================================================
+// Файл: ExpenseExam.Tests/ExpenseModuleTests.cs
+// ==================================================
+using ExpenseExam.Core.Diagnostics;
+using ExpenseExam.Core.FileStorage;
+using ExpenseExam.Core.Models;
+using ExpenseExam.Core.Services;
+
+namespace ExpenseExam.Tests;
+
+[TestClass]
+public class ExpenseModuleTests
+{
+    [TestMethod]
+    public void Expense_Model_StoresData()
+    {
+        Expense expense = new Expense();
+        expense.Date = new DateTime(2026, 7, 1);
+        expense.Category = "Еда";
+        expense.Amount = 450;
+        expense.Comment = "Обед";
+
+        Assert.AreEqual(new DateTime(2026, 7, 1), expense.Date);
+        Assert.AreEqual("Еда", expense.Category);
+        Assert.AreEqual(450m, expense.Amount);
+        Assert.AreEqual("Обед", expense.Comment);
+    }
+
+    [TestMethod]
+    public void ExpenseService_ReturnsTotalAverageAndMax()
+    {
+        ExpenseService service = new ExpenseService();
+        List<Expense> expenses = CreateExpenses();
+
+        decimal total = service.GetTotal(expenses);
+        decimal average = service.GetAverage(expenses);
+        Expense? max = service.GetMaxExpense(expenses);
+
+        Assert.AreEqual(2070m, total);
+        Assert.AreEqual(690m, average);
+        Assert.IsNotNull(max);
+        Assert.AreEqual(1500m, max.Amount);
+        Assert.AreEqual("Учеба", max.Category);
+    }
+
+    [TestMethod]
+    public void CsvStorage_SavesAndLoadsExpenses()
+    {
+        string folder = CreateFolder();
+        string path = Path.Combine(folder, "expenses.csv");
+
+        CsvStorage storage = new CsvStorage();
+        storage.Save(path, CreateExpenses());
+
+        List<Expense> loaded = storage.Load(path);
+
+        Assert.AreEqual(3, loaded.Count);
+        Assert.AreEqual("Еда", loaded[0].Category);
+        Assert.AreEqual(1500m, loaded[2].Amount);
+
+        Directory.Delete(folder, true);
+    }
+
+    [TestMethod]
+    public void JsonStorage_SavesAndLoadsExpenses()
+    {
+        string folder = CreateFolder();
+        string path = Path.Combine(folder, "expenses.json");
+
+        JsonStorage storage = new JsonStorage();
+        storage.Save(path, CreateExpenses());
+
+        List<Expense> loaded = storage.Load(path);
+
+        Assert.AreEqual(3, loaded.Count);
+        Assert.AreEqual("Транспорт", loaded[1].Category);
+        Assert.AreEqual("Курс C#", loaded[2].Comment);
+
+        Directory.Delete(folder, true);
+    }
+
+    [TestMethod]
+    public void ExcelStorage_SavesAndLoadsExpenses()
+    {
+        string folder = CreateFolder();
+        string path = Path.Combine(folder, "expenses.xlsx");
+
+        ExcelStorage storage = new ExcelStorage();
+        storage.Save(path, CreateExpenses());
+
+        List<Expense> loaded = storage.Load(path);
+
+        Assert.AreEqual(3, loaded.Count);
+        Assert.AreEqual("Автобус", loaded[1].Comment);
+        Assert.AreEqual(120m, loaded[1].Amount);
+
+        Directory.Delete(folder, true);
+    }
+
+    [TestMethod]
+    public void DebugHelper_WritesWithoutError()
+    {
+        DebugHelper.WriteDebug("test debug");
+        DebugHelper.WriteTrace("test trace");
+
+        Assert.IsTrue(true);
+    }
+
+    // Program.cs обычно отдельно не тестируют.
+    // Его проверка идет через сервис и хранилища выше.
+
+    private static List<Expense> CreateExpenses()
+    {
+        List<Expense> expenses = new List<Expense>();
+
+        expenses.Add(new Expense { Date = new DateTime(2026, 7, 1), Category = "Еда", Amount = 450m, Comment = "Обед" });
+        expenses.Add(new Expense { Date = new DateTime(2026, 7, 2), Category = "Транспорт", Amount = 120m, Comment = "Автобус" });
+        expenses.Add(new Expense { Date = new DateTime(2026, 7, 3), Category = "Учеба", Amount = 1500m, Comment = "Курс C#" });
+
+        return expenses;
+    }
+
+    private static string CreateFolder()
+    {
+        string folder = Path.Combine(Path.GetTempPath(), "expense_test_" + Guid.NewGuid().ToString());
+        Directory.CreateDirectory(folder);
+        return folder;
+    }
+}`
   }
 ]
 
