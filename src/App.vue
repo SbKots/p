@@ -21,6 +21,28 @@
         @click="copyText(item)"
       >.</button>
     </div>
+
+    <div class="row">
+      <button
+        v-for="item in modularMethods"
+        :key="item.id"
+        :title="item.title"
+        :aria-label="item.title"
+        :class="{ active: copied === item.id }"
+        @click="copyText(item)"
+      >.</button>
+    </div>
+
+    <div class="row">
+      <button
+        v-for="item in modularFiles"
+        :key="item.id"
+        :title="item.title"
+        :aria-label="item.title"
+        :class="{ active: copied === item.id }"
+        @click="copyText(item)"
+      >.</button>
+    </div>
   </main>
 </template>
 
@@ -811,6 +833,795 @@ public static class DebugHelper
         Trace.WriteLine($"[TRACE] {message}");
     }
 }`
+  }
+]
+
+const modularMethods = [
+  {
+    id: 'modular-methods',
+    title: '4 метода по модулям',
+    code: String.raw`// Это один общий текст.
+// Ниже написано, какой кусок в какой файл вставлять.
+// Проект обычный консольный C#.
+
+// ==================================================
+// Файл: ModularMethods.csproj
+// ==================================================
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>
+
+
+// ==================================================
+// Файл: Program.cs
+// ==================================================
+using System.Text;
+using ModularMethods;
+
+Console.OutputEncoding = Encoding.UTF8;
+
+Console.WriteLine("1 - Метод северо-западного угла");
+Console.WriteLine("2 - Метод минимального элемента");
+Console.WriteLine("3 - Алгоритм Дейкстры");
+Console.WriteLine("4 - Код Прюфера");
+Console.WriteLine("5 - Запустить все");
+Console.Write("Выбор: ");
+
+string? choice = args.Length > 0 ? args[0] : Console.ReadLine();
+
+if (choice == "1")
+    NorthWestMethod.Run();
+else if (choice == "2")
+    MinElementMethod.Run();
+else if (choice == "3")
+    DijkstraMethod.Run();
+else if (choice == "4")
+    PruferCodeMethod.Run();
+else if (choice == "5")
+{
+    NorthWestMethod.Run();
+    MinElementMethod.Run();
+    DijkstraMethod.Run();
+    PruferCodeMethod.Run();
+}
+else
+    Console.WriteLine("Такого пункта нет");
+
+
+// ==================================================
+// Файл: NumberReader.cs
+// ==================================================
+namespace ModularMethods;
+
+public static class NumberReader
+{
+    // Переводим строку из файла в массив чисел
+    public static int[] Nums(string s)
+    {
+        string[] parts = s.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        int[] nums = new int[parts.Length];
+
+        for (int i = 0; i < parts.Length; i++)
+        {
+            nums[i] = int.Parse(parts[i]);
+        }
+
+        return nums;
+    }
+}
+
+
+// ==================================================
+// Файл: NorthWestMethod.cs
+// ==================================================
+namespace ModularMethods;
+
+public static class NorthWestMethod
+{
+    public static void Run()
+    {
+        string[] lines = File.ReadAllLines("input1.txt");
+
+        int[] size = NumberReader.Nums(lines[0]);
+        int m = size[0];
+        int n = size[1];
+
+        int[] a = NumberReader.Nums(lines[1]);
+        int[] b = NumberReader.Nums(lines[2]);
+
+        int[,] c = new int[m, n];
+        int[,] x = new int[m, n];
+
+        for (int i = 0; i < m; i++)
+        {
+            int[] row = NumberReader.Nums(lines[i + 3]);
+
+            for (int j = 0; j < n; j++)
+            {
+                c[i, j] = row[j];
+            }
+        }
+
+        int r = 0;
+        int col = 0;
+
+        while (r < m && col < n)
+        {
+            int v;
+
+            if (a[r] < b[col])
+                v = a[r];
+            else
+                v = b[col];
+
+            x[r, col] = v;
+            a[r] -= v;
+            b[col] -= v;
+
+            if (a[r] == 0) r++;
+            if (col < n && b[col] == 0) col++;
+        }
+
+        int sum = 0;
+
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < n; j++)
+                sum += x[i, j] * c[i, j];
+
+        StreamWriter f = new StreamWriter("output1.txt");
+
+        f.WriteLine("Метод северо-западного угла");
+        f.WriteLine("План:");
+
+        for (int i = 0; i < m; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                f.Write(x[i, j] + " ");
+            }
+
+            f.WriteLine();
+        }
+
+        f.WriteLine("Стоимость = " + sum);
+        f.Close();
+    }
+}
+
+
+// ==================================================
+// Файл: MinElementMethod.cs
+// ==================================================
+namespace ModularMethods;
+
+public static class MinElementMethod
+{
+    public static void Run()
+    {
+        string[] lines = File.ReadAllLines("input2.txt");
+
+        int[] size = NumberReader.Nums(lines[0]);
+        int m = size[0];
+        int n = size[1];
+
+        int[] a = NumberReader.Nums(lines[1]);
+        int[] b = NumberReader.Nums(lines[2]);
+
+        int[,] c = new int[m, n];
+        int[,] x = new int[m, n];
+
+        for (int i = 0; i < m; i++)
+        {
+            int[] row = NumberReader.Nums(lines[i + 3]);
+
+            for (int j = 0; j < n; j++)
+            {
+                c[i, j] = row[j];
+            }
+        }
+
+        while (true)
+        {
+            int min = 1000000;
+            int r = -1;
+            int col = -1;
+
+            for (int i = 0; i < m; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    if (a[i] > 0 && b[j] > 0 && c[i, j] < min)
+                    {
+                        min = c[i, j];
+                        r = i;
+                        col = j;
+                    }
+                }
+            }
+
+            if (r == -1) break;
+
+            int v;
+
+            if (a[r] < b[col])
+                v = a[r];
+            else
+                v = b[col];
+
+            x[r, col] = v;
+            a[r] -= v;
+            b[col] -= v;
+        }
+
+        int sum = 0;
+
+        for (int i = 0; i < m; i++)
+            for (int j = 0; j < n; j++)
+                sum += x[i, j] * c[i, j];
+
+        StreamWriter f = new StreamWriter("output2.txt");
+
+        f.WriteLine("Метод минимального элемента");
+        f.WriteLine("План:");
+
+        for (int i = 0; i < m; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                f.Write(x[i, j] + " ");
+            }
+
+            f.WriteLine();
+        }
+
+        f.WriteLine("Стоимость = " + sum);
+        f.Close();
+    }
+}
+
+
+// ==================================================
+// Файл: DijkstraMethod.cs
+// ==================================================
+namespace ModularMethods;
+
+public static class DijkstraMethod
+{
+    public static void Run()
+    {
+        string[] lines = File.ReadAllLines("input3.txt");
+
+        int[] first = NumberReader.Nums(lines[0]);
+        int n = first[0];
+        int start = first[1] - 1;
+
+        int[,] g = new int[n, n];
+
+        for (int i = 0; i < n; i++)
+        {
+            int[] row = NumberReader.Nums(lines[i + 1]);
+
+            for (int j = 0; j < n; j++)
+            {
+                g[i, j] = row[j];
+            }
+        }
+
+        int inf = 1000000000;
+        int[] d = new int[n];
+        bool[] used = new bool[n];
+
+        for (int i = 0; i < n; i++)
+        {
+            d[i] = inf;
+        }
+
+        d[start] = 0;
+
+        for (int step = 0; step < n; step++)
+        {
+            int v = -1;
+
+            for (int i = 0; i < n; i++)
+            {
+                if (!used[i] && (v == -1 || d[i] < d[v]))
+                {
+                    v = i;
+                }
+            }
+
+            if (v == -1 || d[v] == inf) break;
+
+            used[v] = true;
+
+            for (int to = 0; to < n; to++)
+            {
+                if (g[v, to] > 0 && d[v] + g[v, to] < d[to])
+                {
+                    d[to] = d[v] + g[v, to];
+                }
+            }
+        }
+
+        StreamWriter f = new StreamWriter("output3.txt");
+
+        f.WriteLine("Алгоритм Дейкстры");
+
+        for (int i = 0; i < n; i++)
+        {
+            if (d[i] == inf)
+                f.WriteLine("До вершины " + (i + 1) + ": пути нет");
+            else
+                f.WriteLine("До вершины " + (i + 1) + ": " + d[i]);
+        }
+
+        f.Close();
+    }
+}
+
+
+// ==================================================
+// Файл: PruferCodeMethod.cs
+// ==================================================
+namespace ModularMethods;
+
+public static class PruferCodeMethod
+{
+    public static void Run()
+    {
+        string[] lines = File.ReadAllLines("input4.txt");
+        int n = 0;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "") continue;
+
+            string[] p = lines[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            int a = int.Parse(p[0]);
+            int b = int.Parse(p[1]);
+
+            if (a > n) n = a;
+            if (b > n) n = b;
+        }
+
+        int[,] g = new int[n + 1, n + 1];
+        int[] deg = new int[n + 1];
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "") continue;
+
+            string[] p = lines[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            int a = int.Parse(p[0]);
+            int b = int.Parse(p[1]);
+
+            g[a, b] = 1;
+            g[b, a] = 1;
+
+            deg[a]++;
+            deg[b]++;
+        }
+
+        string code = "";
+
+        for (int step = 0; step < n - 2; step++)
+        {
+            int leaf = 1;
+
+            while (deg[leaf] != 1)
+            {
+                leaf++;
+            }
+
+            int next = 1;
+
+            while (g[leaf, next] == 0)
+            {
+                next++;
+            }
+
+            if (code != "") code += " ";
+            code += next;
+
+            g[leaf, next] = 0;
+            g[next, leaf] = 0;
+            deg[leaf]--;
+            deg[next]--;
+        }
+
+        File.WriteAllText("output4.txt", "Код Прюфера: " + code);
+    }
+}
+
+
+// ==================================================
+// Файл: input1.txt
+// ==================================================
+4 5
+14 14 14 14
+13 5 13 12 13
+16 26 12 24 3
+5 2 19 27 2
+29 23 25 16 8
+2 25 14 15 21
+
+
+// ==================================================
+// Файл: input2.txt
+// ==================================================
+4 5
+14 14 14 14
+13 5 13 12 13
+16 26 12 24 3
+5 2 19 27 2
+29 23 25 16 8
+2 25 14 15 21
+
+
+// ==================================================
+// Файл: input3.txt
+// ==================================================
+6 1
+0 7 9 0 0 14
+7 0 10 15 0 0
+9 10 0 11 0 2
+0 15 11 0 6 0
+0 0 0 6 0 9
+14 0 2 0 9 0
+
+
+// ==================================================
+// Файл: input4.txt
+// ==================================================
+1 2
+1 3
+3 4
+3 5
+5 6`
+  }
+]
+
+const modularFiles = [
+  {
+    id: 'modular-files',
+    title: 'Проект расходов по модулям + CSV JSON XLSX',
+    code: String.raw`// Это один общий текст.
+// Ниже написано, какой код в какой файл вставлять.
+// Тут есть примеры сохранения и чтения из CSV, JSON и XLSX.
+
+// ==================================================
+// Файл: ExpenseExam.csproj
+// ==================================================
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+  </ItemGroup>
+</Project>
+
+
+// ==================================================
+// Файл: Models/Expense.cs
+// ==================================================
+namespace ExpenseExam.Core.Models;
+
+public class Expense
+{
+    public DateTime Date { get; set; }
+    public string Category { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public string Comment { get; set; } = string.Empty;
+}
+
+
+// ==================================================
+// Файл: Diagnostics/DebugHelper.cs
+// ==================================================
+using System.Diagnostics;
+
+namespace ExpenseExam.Core.Diagnostics;
+
+public static class DebugHelper
+{
+    public static void WriteDebug(string message)
+    {
+        Debug.WriteLine("[DEBUG] " + message);
+    }
+
+    public static void WriteTrace(string message)
+    {
+        Trace.WriteLine("[TRACE] " + message);
+    }
+}
+
+
+// ==================================================
+// Файл: Services/ExpenseService.cs
+// ==================================================
+using ExpenseExam.Core.Diagnostics;
+using ExpenseExam.Core.Models;
+
+namespace ExpenseExam.Core.Services;
+
+public class ExpenseService
+{
+    public decimal GetTotal(List<Expense> expenses)
+    {
+        DebugHelper.WriteDebug("Считаем общую сумму");
+
+        decimal sum = 0;
+
+        for (int i = 0; i < expenses.Count; i++)
+        {
+            sum += expenses[i].Amount;
+        }
+
+        return sum;
+    }
+
+    public decimal GetAverage(List<Expense> expenses)
+    {
+        if (expenses.Count == 0)
+        {
+            return 0;
+        }
+
+        return GetTotal(expenses) / expenses.Count;
+    }
+
+    public Expense? GetMaxExpense(List<Expense> expenses)
+    {
+        if (expenses.Count == 0)
+        {
+            return null;
+        }
+
+        Expense max = expenses[0];
+
+        for (int i = 1; i < expenses.Count; i++)
+        {
+            if (expenses[i].Amount > max.Amount)
+            {
+                max = expenses[i];
+            }
+        }
+
+        return max;
+    }
+}
+
+
+// ==================================================
+// Файл: FileStorage/CsvStorage.cs
+// ==================================================
+using System.Globalization;
+using System.Text;
+using ExpenseExam.Core.Diagnostics;
+using ExpenseExam.Core.Models;
+
+namespace ExpenseExam.Core.FileStorage;
+
+public class CsvStorage
+{
+    private static readonly UTF8Encoding FileEncoding = new(encoderShouldEmitUTF8Identifier: true);
+
+    public void Save(string path, List<Expense> expenses)
+    {
+        DebugHelper.WriteDebug("Сохраняем CSV");
+
+        StreamWriter writer = new StreamWriter(path, false, FileEncoding);
+
+        writer.WriteLine("Date;Category;Amount;Comment");
+
+        for (int i = 0; i < expenses.Count; i++)
+        {
+            Expense e = expenses[i];
+            writer.WriteLine(e.Date.ToString("yyyy-MM-dd") + ";" +
+                             e.Category + ";" +
+                             e.Amount.ToString(CultureInfo.InvariantCulture) + ";" +
+                             e.Comment);
+        }
+
+        writer.Close();
+    }
+
+    public List<Expense> Load(string path)
+    {
+        DebugHelper.WriteTrace("Читаем CSV");
+
+        List<Expense> expenses = new List<Expense>();
+        string[] lines = File.ReadAllLines(path, FileEncoding);
+
+        for (int i = 1; i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "") continue;
+
+            string[] p = lines[i].Split(';');
+
+            Expense e = new Expense();
+            e.Date = DateTime.ParseExact(p[0], "yyyy-MM-dd", CultureInfo.InvariantCulture);
+            e.Category = p[1];
+            e.Amount = decimal.Parse(p[2], CultureInfo.InvariantCulture);
+            e.Comment = p[3];
+
+            expenses.Add(e);
+        }
+
+        return expenses;
+    }
+}
+
+
+// ==================================================
+// Файл: FileStorage/JsonStorage.cs
+// ==================================================
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using ExpenseExam.Core.Diagnostics;
+using ExpenseExam.Core.Models;
+
+namespace ExpenseExam.Core.FileStorage;
+
+public class JsonStorage
+{
+    private static readonly UTF8Encoding FileEncoding = new(encoderShouldEmitUTF8Identifier: true);
+
+    private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        WriteIndented = true
+    };
+
+    public void Save(string path, List<Expense> expenses)
+    {
+        DebugHelper.WriteDebug("Сохраняем JSON");
+
+        string json = JsonSerializer.Serialize(expenses, Options);
+        File.WriteAllText(path, json, FileEncoding);
+    }
+
+    public List<Expense> Load(string path)
+    {
+        DebugHelper.WriteTrace("Читаем JSON");
+
+        string json = File.ReadAllText(path, FileEncoding);
+        List<Expense>? expenses = JsonSerializer.Deserialize<List<Expense>>(json, Options);
+
+        if (expenses == null)
+        {
+            return new List<Expense>();
+        }
+
+        return expenses;
+    }
+}
+
+
+// ==================================================
+// Файл: FileStorage/ExcelStorage.cs
+// ==================================================
+using ClosedXML.Excel;
+using ExpenseExam.Core.Diagnostics;
+using ExpenseExam.Core.Models;
+
+namespace ExpenseExam.Core.FileStorage;
+
+public class ExcelStorage
+{
+    public void Save(string path, List<Expense> expenses)
+    {
+        DebugHelper.WriteDebug("Сохраняем XLSX");
+
+        XLWorkbook workbook = new XLWorkbook();
+        IXLWorksheet sheet = workbook.Worksheets.Add("Expenses");
+
+        sheet.Cell(1, 1).Value = "Date";
+        sheet.Cell(1, 2).Value = "Category";
+        sheet.Cell(1, 3).Value = "Amount";
+        sheet.Cell(1, 4).Value = "Comment";
+
+        for (int i = 0; i < expenses.Count; i++)
+        {
+            int row = i + 2;
+
+            sheet.Cell(row, 1).Value = expenses[i].Date;
+            sheet.Cell(row, 1).Style.DateFormat.Format = "yyyy-mm-dd";
+            sheet.Cell(row, 2).Value = expenses[i].Category;
+            sheet.Cell(row, 3).Value = expenses[i].Amount;
+            sheet.Cell(row, 4).Value = expenses[i].Comment;
+        }
+
+        sheet.Columns().AdjustToContents();
+        workbook.SaveAs(path);
+        workbook.Dispose();
+    }
+
+    public List<Expense> Load(string path)
+    {
+        DebugHelper.WriteTrace("Читаем XLSX");
+
+        XLWorkbook workbook = new XLWorkbook(path);
+        IXLWorksheet sheet = workbook.Worksheet("Expenses");
+        List<Expense> expenses = new List<Expense>();
+
+        int row = 2;
+
+        while (!sheet.Cell(row, 1).IsEmpty())
+        {
+            Expense e = new Expense();
+            e.Date = sheet.Cell(row, 1).GetDateTime();
+            e.Category = sheet.Cell(row, 2).GetString();
+            e.Amount = sheet.Cell(row, 3).GetValue<decimal>();
+            e.Comment = sheet.Cell(row, 4).GetString();
+
+            expenses.Add(e);
+            row++;
+        }
+
+        workbook.Dispose();
+        return expenses;
+    }
+}
+
+
+// ==================================================
+// Файл: Program.cs
+// ==================================================
+using ExpenseExam.Core.FileStorage;
+using ExpenseExam.Core.Models;
+using ExpenseExam.Core.Services;
+
+List<Expense> expenses = new List<Expense>();
+
+expenses.Add(new Expense { Date = new DateTime(2026, 7, 1), Category = "Еда", Amount = 450, Comment = "Обед" });
+expenses.Add(new Expense { Date = new DateTime(2026, 7, 2), Category = "Транспорт", Amount = 120, Comment = "Автобус" });
+expenses.Add(new Expense { Date = new DateTime(2026, 7, 3), Category = "Учеба", Amount = 1500, Comment = "Курс C#" });
+
+ExpenseService service = new ExpenseService();
+
+CsvStorage csv = new CsvStorage();
+JsonStorage json = new JsonStorage();
+ExcelStorage xlsx = new ExcelStorage();
+
+string folder = Path.Combine(AppContext.BaseDirectory, "data");
+Directory.CreateDirectory(folder);
+
+string csvPath = Path.Combine(folder, "expenses.csv");
+string jsonPath = Path.Combine(folder, "expenses.json");
+string xlsxPath = Path.Combine(folder, "expenses.xlsx");
+
+Console.WriteLine("Общая сумма: " + service.GetTotal(expenses));
+Console.WriteLine("Среднее: " + service.GetAverage(expenses));
+Console.WriteLine("Максимальный расход: " + service.GetMaxExpense(expenses)?.Amount);
+
+// Пример записи в CSV и чтения из CSV
+csv.Save(csvPath, expenses);
+List<Expense> fromCsv = csv.Load(csvPath);
+Console.WriteLine("Из CSV прочитано: " + fromCsv.Count);
+
+// Пример записи в JSON и чтения из JSON
+json.Save(jsonPath, expenses);
+List<Expense> fromJson = json.Load(jsonPath);
+Console.WriteLine("Из JSON прочитано: " + fromJson.Count);
+
+// Пример записи в XLSX и чтения из XLSX
+xlsx.Save(xlsxPath, expenses);
+List<Expense> fromXlsx = xlsx.Load(xlsxPath);
+Console.WriteLine("Из XLSX прочитано: " + fromXlsx.Count);
+
+Console.WriteLine("Файлы лежат тут: " + folder);`
   }
 ]
 
