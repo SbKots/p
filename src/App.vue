@@ -24,7 +24,7 @@
 
     <div class="row">
       <button
-        v-for="item in modularMethods"
+        v-for="item in perMethodModules"
         :key="item.id"
         :title="item.title"
         :aria-label="item.title"
@@ -844,6 +844,1028 @@ public static class DebugHelper
         Trace.WriteLine($"[TRACE] {message}");
     }
 }`
+  }
+]
+
+const perMethodModules = [
+  {
+    id: 'north-west-modules',
+    title: 'Северо-западный угол по модулям',
+    code: String.raw`// Метод северо-западного угла, разбитый по модулям.
+// Просто создай файлы с такими названиями и раскидай код.
+
+// ==================================================
+// Файл: Common/NumberReader.cs
+// ==================================================
+namespace Methods.Core.Common;
+
+public static class NumberReader
+{
+    public static int[] ReadNumbers(string line)
+    {
+        string[] parts = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        int[] nums = new int[parts.Length];
+
+        for (int i = 0; i < parts.Length; i++)
+        {
+            nums[i] = int.Parse(parts[i]);
+        }
+
+        return nums;
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/TransportData.cs
+// ==================================================
+namespace Methods.Core.Transport;
+
+public class TransportData
+{
+    public int[] Supply { get; }
+    public int[] Demand { get; }
+    public int[,] Cost { get; }
+
+    public TransportData(int[] supply, int[] demand, int[,] cost)
+    {
+        Supply = supply;
+        Demand = demand;
+        Cost = cost;
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/TransportResult.cs
+// ==================================================
+namespace Methods.Core.Transport;
+
+public class TransportResult
+{
+    public int[,] Plan { get; }
+    public int TotalCost { get; }
+
+    public TransportResult(int[,] plan, int totalCost)
+    {
+        Plan = plan;
+        TotalCost = totalCost;
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/TransportDataReader.cs
+// ==================================================
+using Methods.Core.Common;
+
+namespace Methods.Core.Transport;
+
+public static class TransportDataReader
+{
+    public static TransportData ReadFromFile(string path)
+    {
+        string[] lines = File.ReadAllLines(path);
+
+        int[] size = NumberReader.ReadNumbers(lines[0]);
+        int m = size[0];
+        int n = size[1];
+
+        int[] supply = NumberReader.ReadNumbers(lines[1]);
+        int[] demand = NumberReader.ReadNumbers(lines[2]);
+
+        int[,] cost = new int[m, n];
+
+        for (int i = 0; i < m; i++)
+        {
+            int[] row = NumberReader.ReadNumbers(lines[i + 3]);
+
+            for (int j = 0; j < n; j++)
+            {
+                cost[i, j] = row[j];
+            }
+        }
+
+        return new TransportData(supply, demand, cost);
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/NorthWestAlgorithm.cs
+// ==================================================
+namespace Methods.Core.Transport;
+
+public static class NorthWestAlgorithm
+{
+    public static TransportResult Solve(TransportData data)
+    {
+        int m = data.Supply.Length;
+        int n = data.Demand.Length;
+
+        int[] supply = CopyArray(data.Supply);
+        int[] demand = CopyArray(data.Demand);
+        int[,] plan = new int[m, n];
+
+        int row = 0;
+        int col = 0;
+
+        while (row < m && col < n)
+        {
+            int value;
+
+            if (supply[row] < demand[col])
+                value = supply[row];
+            else
+                value = demand[col];
+
+            plan[row, col] = value;
+            supply[row] -= value;
+            demand[col] -= value;
+
+            if (supply[row] == 0) row++;
+            if (col < n && demand[col] == 0) col++;
+        }
+
+        int sum = CountCost(plan, data.Cost);
+        return new TransportResult(plan, sum);
+    }
+
+    private static int CountCost(int[,] plan, int[,] cost)
+    {
+        int sum = 0;
+
+        for (int i = 0; i < plan.GetLength(0); i++)
+            for (int j = 0; j < plan.GetLength(1); j++)
+                sum += plan[i, j] * cost[i, j];
+
+        return sum;
+    }
+
+    private static int[] CopyArray(int[] source)
+    {
+        int[] copy = new int[source.Length];
+
+        for (int i = 0; i < source.Length; i++)
+            copy[i] = source[i];
+
+        return copy;
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/TransportResultWriter.cs
+// ==================================================
+namespace Methods.Core.Transport;
+
+public static class TransportResultWriter
+{
+    public static void WriteToFile(string path, string title, TransportResult result)
+    {
+        StreamWriter writer = new StreamWriter(path);
+
+        writer.WriteLine(title);
+        writer.WriteLine("План:");
+
+        for (int i = 0; i < result.Plan.GetLength(0); i++)
+        {
+            for (int j = 0; j < result.Plan.GetLength(1); j++)
+            {
+                writer.Write(result.Plan[i, j] + " ");
+            }
+
+            writer.WriteLine();
+        }
+
+        writer.WriteLine("Стоимость = " + result.TotalCost);
+        writer.Close();
+    }
+}
+
+
+// ==================================================
+// Файл: Program.cs
+// ==================================================
+using Methods.Core.Transport;
+
+TransportData data = TransportDataReader.ReadFromFile("input1.txt");
+TransportResult result = NorthWestAlgorithm.Solve(data);
+TransportResultWriter.WriteToFile("output1.txt", "Метод северо-западного угла", result);
+
+
+// ==================================================
+// Файл: Tests/NorthWestAlgorithmTests.cs
+// ==================================================
+using Methods.Core.Transport;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace Methods.Tests;
+
+[TestClass]
+public class NorthWestAlgorithmTests
+{
+    [TestMethod]
+    public void Solve_ReturnsExpectedPlanAndCost()
+    {
+        TransportResult result = NorthWestAlgorithm.Solve(CreateData());
+
+        int[,] expectedPlan =
+        {
+            { 13, 1, 0, 0, 0 },
+            { 0, 4, 10, 0, 0 },
+            { 0, 0, 3, 11, 0 },
+            { 0, 0, 0, 1, 13 }
+        };
+
+        Assert.AreEqual(971, result.TotalCost);
+        AssertPlan(expectedPlan, result.Plan);
+    }
+
+    private static TransportData CreateData()
+    {
+        int[] supply = { 14, 14, 14, 14 };
+        int[] demand = { 13, 5, 13, 12, 13 };
+
+        int[,] cost =
+        {
+            { 16, 26, 12, 24, 3 },
+            { 5, 2, 19, 27, 2 },
+            { 29, 23, 25, 16, 8 },
+            { 2, 25, 14, 15, 21 }
+        };
+
+        return new TransportData(supply, demand, cost);
+    }
+
+    private static void AssertPlan(int[,] expected, int[,] actual)
+    {
+        for (int i = 0; i < expected.GetLength(0); i++)
+            for (int j = 0; j < expected.GetLength(1); j++)
+                Assert.AreEqual(expected[i, j], actual[i, j]);
+    }
+}
+
+
+// ==================================================
+// Файл: input1.txt
+// ==================================================
+4 5
+14 14 14 14
+13 5 13 12 13
+16 26 12 24 3
+5 2 19 27 2
+29 23 25 16 8
+2 25 14 15 21`
+  },
+  {
+    id: 'min-element-modules',
+    title: 'Минимальный элемент по модулям',
+    code: String.raw`// Метод минимального элемента, разбитый по модулям.
+// Просто создай файлы с такими названиями и раскидай код.
+
+// ==================================================
+// Файл: Common/NumberReader.cs
+// ==================================================
+namespace Methods.Core.Common;
+
+public static class NumberReader
+{
+    public static int[] ReadNumbers(string line)
+    {
+        string[] parts = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        int[] nums = new int[parts.Length];
+
+        for (int i = 0; i < parts.Length; i++)
+        {
+            nums[i] = int.Parse(parts[i]);
+        }
+
+        return nums;
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/TransportData.cs
+// ==================================================
+namespace Methods.Core.Transport;
+
+public class TransportData
+{
+    public int[] Supply { get; }
+    public int[] Demand { get; }
+    public int[,] Cost { get; }
+
+    public TransportData(int[] supply, int[] demand, int[,] cost)
+    {
+        Supply = supply;
+        Demand = demand;
+        Cost = cost;
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/TransportResult.cs
+// ==================================================
+namespace Methods.Core.Transport;
+
+public class TransportResult
+{
+    public int[,] Plan { get; }
+    public int TotalCost { get; }
+
+    public TransportResult(int[,] plan, int totalCost)
+    {
+        Plan = plan;
+        TotalCost = totalCost;
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/TransportDataReader.cs
+// ==================================================
+using Methods.Core.Common;
+
+namespace Methods.Core.Transport;
+
+public static class TransportDataReader
+{
+    public static TransportData ReadFromFile(string path)
+    {
+        string[] lines = File.ReadAllLines(path);
+
+        int[] size = NumberReader.ReadNumbers(lines[0]);
+        int m = size[0];
+        int n = size[1];
+
+        int[] supply = NumberReader.ReadNumbers(lines[1]);
+        int[] demand = NumberReader.ReadNumbers(lines[2]);
+
+        int[,] cost = new int[m, n];
+
+        for (int i = 0; i < m; i++)
+        {
+            int[] row = NumberReader.ReadNumbers(lines[i + 3]);
+
+            for (int j = 0; j < n; j++)
+            {
+                cost[i, j] = row[j];
+            }
+        }
+
+        return new TransportData(supply, demand, cost);
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/MinElementAlgorithm.cs
+// ==================================================
+namespace Methods.Core.Transport;
+
+public static class MinElementAlgorithm
+{
+    public static TransportResult Solve(TransportData data)
+    {
+        int m = data.Supply.Length;
+        int n = data.Demand.Length;
+
+        int[] supply = CopyArray(data.Supply);
+        int[] demand = CopyArray(data.Demand);
+        int[,] plan = new int[m, n];
+
+        while (true)
+        {
+            int min = 1000000;
+            int row = -1;
+            int col = -1;
+
+            for (int i = 0; i < m; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    if (supply[i] > 0 && demand[j] > 0 && data.Cost[i, j] < min)
+                    {
+                        min = data.Cost[i, j];
+                        row = i;
+                        col = j;
+                    }
+                }
+            }
+
+            if (row == -1) break;
+
+            int value;
+
+            if (supply[row] < demand[col])
+                value = supply[row];
+            else
+                value = demand[col];
+
+            plan[row, col] = value;
+            supply[row] -= value;
+            demand[col] -= value;
+        }
+
+        int sum = CountCost(plan, data.Cost);
+        return new TransportResult(plan, sum);
+    }
+
+    private static int CountCost(int[,] plan, int[,] cost)
+    {
+        int sum = 0;
+
+        for (int i = 0; i < plan.GetLength(0); i++)
+            for (int j = 0; j < plan.GetLength(1); j++)
+                sum += plan[i, j] * cost[i, j];
+
+        return sum;
+    }
+
+    private static int[] CopyArray(int[] source)
+    {
+        int[] copy = new int[source.Length];
+
+        for (int i = 0; i < source.Length; i++)
+            copy[i] = source[i];
+
+        return copy;
+    }
+}
+
+
+// ==================================================
+// Файл: Transport/TransportResultWriter.cs
+// ==================================================
+namespace Methods.Core.Transport;
+
+public static class TransportResultWriter
+{
+    public static void WriteToFile(string path, string title, TransportResult result)
+    {
+        StreamWriter writer = new StreamWriter(path);
+
+        writer.WriteLine(title);
+        writer.WriteLine("План:");
+
+        for (int i = 0; i < result.Plan.GetLength(0); i++)
+        {
+            for (int j = 0; j < result.Plan.GetLength(1); j++)
+            {
+                writer.Write(result.Plan[i, j] + " ");
+            }
+
+            writer.WriteLine();
+        }
+
+        writer.WriteLine("Стоимость = " + result.TotalCost);
+        writer.Close();
+    }
+}
+
+
+// ==================================================
+// Файл: Program.cs
+// ==================================================
+using Methods.Core.Transport;
+
+TransportData data = TransportDataReader.ReadFromFile("input2.txt");
+TransportResult result = MinElementAlgorithm.Solve(data);
+TransportResultWriter.WriteToFile("output2.txt", "Метод минимального элемента", result);
+
+
+// ==================================================
+// Файл: Tests/MinElementAlgorithmTests.cs
+// ==================================================
+using Methods.Core.Transport;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace Methods.Tests;
+
+[TestClass]
+public class MinElementAlgorithmTests
+{
+    [TestMethod]
+    public void Solve_ReturnsExpectedPlanAndCost()
+    {
+        TransportResult result = MinElementAlgorithm.Solve(CreateData());
+
+        int[,] expectedPlan =
+        {
+            { 0, 0, 10, 0, 4 },
+            { 0, 5, 0, 0, 9 },
+            { 0, 0, 2, 12, 0 },
+            { 13, 0, 1, 0, 0 }
+        };
+
+        Assert.AreEqual(442, result.TotalCost);
+        AssertPlan(expectedPlan, result.Plan);
+    }
+
+    private static TransportData CreateData()
+    {
+        int[] supply = { 14, 14, 14, 14 };
+        int[] demand = { 13, 5, 13, 12, 13 };
+
+        int[,] cost =
+        {
+            { 16, 26, 12, 24, 3 },
+            { 5, 2, 19, 27, 2 },
+            { 29, 23, 25, 16, 8 },
+            { 2, 25, 14, 15, 21 }
+        };
+
+        return new TransportData(supply, demand, cost);
+    }
+
+    private static void AssertPlan(int[,] expected, int[,] actual)
+    {
+        for (int i = 0; i < expected.GetLength(0); i++)
+            for (int j = 0; j < expected.GetLength(1); j++)
+                Assert.AreEqual(expected[i, j], actual[i, j]);
+    }
+}
+
+
+// ==================================================
+// Файл: input2.txt
+// ==================================================
+4 5
+14 14 14 14
+13 5 13 12 13
+16 26 12 24 3
+5 2 19 27 2
+29 23 25 16 8
+2 25 14 15 21`
+  },
+  {
+    id: 'dijkstra-modules',
+    title: 'Дейкстра по модулям',
+    code: String.raw`// Алгоритм Дейкстры, разбитый по модулям.
+// Просто создай файлы с такими названиями и раскидай код.
+
+// ==================================================
+// Файл: Common/NumberReader.cs
+// ==================================================
+namespace Methods.Core.Common;
+
+public static class NumberReader
+{
+    public static int[] ReadNumbers(string line)
+    {
+        string[] parts = line.Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+        int[] nums = new int[parts.Length];
+
+        for (int i = 0; i < parts.Length; i++)
+        {
+            nums[i] = int.Parse(parts[i]);
+        }
+
+        return nums;
+    }
+}
+
+
+// ==================================================
+// Файл: Dijkstra/DijkstraData.cs
+// ==================================================
+namespace Methods.Core.Dijkstra;
+
+public class DijkstraData
+{
+    public int[,] Graph { get; }
+    public int StartVertex { get; }
+
+    public DijkstraData(int[,] graph, int startVertex)
+    {
+        Graph = graph;
+        StartVertex = startVertex;
+    }
+}
+
+
+// ==================================================
+// Файл: Dijkstra/DijkstraResult.cs
+// ==================================================
+namespace Methods.Core.Dijkstra;
+
+public class DijkstraResult
+{
+    public int[] Distances { get; }
+    public int Infinity { get; }
+
+    public DijkstraResult(int[] distances, int infinity)
+    {
+        Distances = distances;
+        Infinity = infinity;
+    }
+}
+
+
+// ==================================================
+// Файл: Dijkstra/DijkstraDataReader.cs
+// ==================================================
+using Methods.Core.Common;
+
+namespace Methods.Core.Dijkstra;
+
+public static class DijkstraDataReader
+{
+    public static DijkstraData ReadFromFile(string path)
+    {
+        string[] lines = File.ReadAllLines(path);
+
+        int[] first = NumberReader.ReadNumbers(lines[0]);
+        int n = first[0];
+        int start = first[1] - 1;
+
+        int[,] graph = new int[n, n];
+
+        for (int i = 0; i < n; i++)
+        {
+            int[] row = NumberReader.ReadNumbers(lines[i + 1]);
+
+            for (int j = 0; j < n; j++)
+            {
+                graph[i, j] = row[j];
+            }
+        }
+
+        return new DijkstraData(graph, start);
+    }
+}
+
+
+// ==================================================
+// Файл: Dijkstra/DijkstraAlgorithm.cs
+// ==================================================
+namespace Methods.Core.Dijkstra;
+
+public static class DijkstraAlgorithm
+{
+    public static DijkstraResult Solve(DijkstraData data)
+    {
+        int n = data.Graph.GetLength(0);
+        int inf = 1000000000;
+        int[] distance = new int[n];
+        bool[] used = new bool[n];
+
+        for (int i = 0; i < n; i++)
+        {
+            distance[i] = inf;
+        }
+
+        distance[data.StartVertex] = 0;
+
+        for (int step = 0; step < n; step++)
+        {
+            int vertex = -1;
+
+            for (int i = 0; i < n; i++)
+            {
+                if (!used[i] && (vertex == -1 || distance[i] < distance[vertex]))
+                {
+                    vertex = i;
+                }
+            }
+
+            if (vertex == -1 || distance[vertex] == inf) break;
+
+            used[vertex] = true;
+
+            for (int to = 0; to < n; to++)
+            {
+                if (data.Graph[vertex, to] > 0 && distance[vertex] + data.Graph[vertex, to] < distance[to])
+                {
+                    distance[to] = distance[vertex] + data.Graph[vertex, to];
+                }
+            }
+        }
+
+        return new DijkstraResult(distance, inf);
+    }
+}
+
+
+// ==================================================
+// Файл: Dijkstra/DijkstraResultWriter.cs
+// ==================================================
+namespace Methods.Core.Dijkstra;
+
+public static class DijkstraResultWriter
+{
+    public static void WriteToFile(string path, DijkstraResult result)
+    {
+        StreamWriter writer = new StreamWriter(path);
+
+        writer.WriteLine("Алгоритм Дейкстры");
+
+        for (int i = 0; i < result.Distances.Length; i++)
+        {
+            if (result.Distances[i] == result.Infinity)
+                writer.WriteLine("До вершины " + (i + 1) + ": пути нет");
+            else
+                writer.WriteLine("До вершины " + (i + 1) + ": " + result.Distances[i]);
+        }
+
+        writer.Close();
+    }
+}
+
+
+// ==================================================
+// Файл: Program.cs
+// ==================================================
+using Methods.Core.Dijkstra;
+
+DijkstraData data = DijkstraDataReader.ReadFromFile("input3.txt");
+DijkstraResult result = DijkstraAlgorithm.Solve(data);
+DijkstraResultWriter.WriteToFile("output3.txt", result);
+
+
+// ==================================================
+// Файл: Tests/DijkstraAlgorithmTests.cs
+// ==================================================
+using Methods.Core.Dijkstra;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace Methods.Tests;
+
+[TestClass]
+public class DijkstraAlgorithmTests
+{
+    [TestMethod]
+    public void Solve_ReturnsExpectedDistances()
+    {
+        DijkstraResult result = DijkstraAlgorithm.Solve(CreateData());
+
+        int[] expected = { 0, 7, 9, 20, 20, 11 };
+
+        Assert.AreEqual(expected.Length, result.Distances.Length);
+
+        for (int i = 0; i < expected.Length; i++)
+        {
+            Assert.AreEqual(expected[i], result.Distances[i]);
+        }
+    }
+
+    private static DijkstraData CreateData()
+    {
+        int[,] graph =
+        {
+            { 0, 7, 9, 0, 0, 14 },
+            { 7, 0, 10, 15, 0, 0 },
+            { 9, 10, 0, 11, 0, 2 },
+            { 0, 15, 11, 0, 6, 0 },
+            { 0, 0, 0, 6, 0, 9 },
+            { 14, 0, 2, 0, 9, 0 }
+        };
+
+        return new DijkstraData(graph, 0);
+    }
+}
+
+
+// ==================================================
+// Файл: input3.txt
+// ==================================================
+6 1
+0 7 9 0 0 14
+7 0 10 15 0 0
+9 10 0 11 0 2
+0 15 11 0 6 0
+0 0 0 6 0 9
+14 0 2 0 9 0`
+  },
+  {
+    id: 'prufer-modules',
+    title: 'Код Прюфера по модулям',
+    code: String.raw`// Составление кода Прюфера, разбитое по модулям.
+// Просто создай файлы с такими названиями и раскидай код.
+
+// ==================================================
+// Файл: Prufer/PruferData.cs
+// ==================================================
+namespace Methods.Core.Prufer;
+
+public class PruferData
+{
+    public int[,] Edges { get; }
+    public int EdgeCount { get; }
+    public int VertexCount { get; }
+
+    public PruferData(int[,] edges, int edgeCount, int vertexCount)
+    {
+        Edges = edges;
+        EdgeCount = edgeCount;
+        VertexCount = vertexCount;
+    }
+}
+
+
+// ==================================================
+// Файл: Prufer/PruferResult.cs
+// ==================================================
+namespace Methods.Core.Prufer;
+
+public class PruferResult
+{
+    public int[] Code { get; }
+
+    public PruferResult(int[] code)
+    {
+        Code = code;
+    }
+}
+
+
+// ==================================================
+// Файл: Prufer/PruferDataReader.cs
+// ==================================================
+namespace Methods.Core.Prufer;
+
+public static class PruferDataReader
+{
+    public static PruferData ReadFromFile(string path)
+    {
+        string[] lines = File.ReadAllLines(path);
+        int edgeCount = 0;
+        int vertexCount = 0;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "") continue;
+
+            string[] parts = lines[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            int a = int.Parse(parts[0]);
+            int b = int.Parse(parts[1]);
+
+            if (a > vertexCount) vertexCount = a;
+            if (b > vertexCount) vertexCount = b;
+            edgeCount++;
+        }
+
+        int[,] edges = new int[edgeCount, 2];
+        int index = 0;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Trim() == "") continue;
+
+            string[] parts = lines[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+
+            edges[index, 0] = int.Parse(parts[0]);
+            edges[index, 1] = int.Parse(parts[1]);
+            index++;
+        }
+
+        return new PruferData(edges, edgeCount, vertexCount);
+    }
+}
+
+
+// ==================================================
+// Файл: Prufer/PruferAlgorithm.cs
+// ==================================================
+namespace Methods.Core.Prufer;
+
+public static class PruferAlgorithm
+{
+    public static PruferResult Solve(PruferData data)
+    {
+        int n = data.VertexCount;
+        int[,] graph = new int[n + 1, n + 1];
+        int[] degree = new int[n + 1];
+
+        for (int i = 0; i < data.EdgeCount; i++)
+        {
+            int a = data.Edges[i, 0];
+            int b = data.Edges[i, 1];
+
+            graph[a, b] = 1;
+            graph[b, a] = 1;
+            degree[a]++;
+            degree[b]++;
+        }
+
+        int[] code = new int[n - 2];
+
+        for (int step = 0; step < n - 2; step++)
+        {
+            int leaf = 1;
+
+            while (degree[leaf] != 1)
+            {
+                leaf++;
+            }
+
+            int next = 1;
+
+            while (graph[leaf, next] == 0)
+            {
+                next++;
+            }
+
+            code[step] = next;
+
+            graph[leaf, next] = 0;
+            graph[next, leaf] = 0;
+            degree[leaf]--;
+            degree[next]--;
+        }
+
+        return new PruferResult(code);
+    }
+}
+
+
+// ==================================================
+// Файл: Prufer/PruferResultWriter.cs
+// ==================================================
+namespace Methods.Core.Prufer;
+
+public static class PruferResultWriter
+{
+    public static void WriteToFile(string path, PruferResult result)
+    {
+        StreamWriter writer = new StreamWriter(path);
+
+        writer.Write("Код Прюфера: ");
+
+        for (int i = 0; i < result.Code.Length; i++)
+        {
+            if (i > 0) writer.Write(" ");
+            writer.Write(result.Code[i]);
+        }
+
+        writer.Close();
+    }
+}
+
+
+// ==================================================
+// Файл: Program.cs
+// ==================================================
+using Methods.Core.Prufer;
+
+PruferData data = PruferDataReader.ReadFromFile("input4.txt");
+PruferResult result = PruferAlgorithm.Solve(data);
+PruferResultWriter.WriteToFile("output4.txt", result);
+
+
+// ==================================================
+// Файл: Tests/PruferAlgorithmTests.cs
+// ==================================================
+using Methods.Core.Prufer;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace Methods.Tests;
+
+[TestClass]
+public class PruferAlgorithmTests
+{
+    [TestMethod]
+    public void Solve_ReturnsExpectedCode()
+    {
+        PruferResult result = PruferAlgorithm.Solve(CreateData());
+
+        int[] expected = { 1, 3, 3, 5 };
+
+        Assert.AreEqual(expected.Length, result.Code.Length);
+
+        for (int i = 0; i < expected.Length; i++)
+        {
+            Assert.AreEqual(expected[i], result.Code[i]);
+        }
+    }
+
+    private static PruferData CreateData()
+    {
+        int[,] edges =
+        {
+            { 1, 2 },
+            { 1, 3 },
+            { 3, 4 },
+            { 3, 5 },
+            { 5, 6 }
+        };
+
+        return new PruferData(edges, 5, 6);
+    }
+}
+
+
+// ==================================================
+// Файл: input4.txt
+// ==================================================
+1 2
+1 3
+3 4
+3 5
+5 6`
   }
 ]
 
